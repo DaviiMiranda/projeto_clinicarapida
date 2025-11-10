@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MEDICO
+  PACIENTE
+}
+
+enum ConsultaStatus {
+  AGENDADA
+  CONFIRMADA
+  CANCELADA
+  CONCLUIDA
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  medico   Medico?
+  paciente Paciente?
+
+  @@map("users")
+}
+
+model Medico {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  crm            String   @unique
+  especialidade  String
+  telefone       String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  horarios  Horario[]
+  consultas Consulta[]
+
+  @@map("medicos")
+}
+
+model Paciente {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cpf             String    @unique
+  telefone        String
+  dataNascimento  DateTime
+  convenio        String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  consultas Consulta[]
+
+  @@map("pacientes")
+}
+
+model Horario {
+  id            String   @id @default(uuid())
+  medicoId      String
+  medico        Medico   @relation(fields: [medicoId], references: [id], onDelete: Cascade)
+  diaSemana     Int
+  horaInicio    String
+  horaFim       String
+  disponivel    Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("horarios")
+}
+
+model Consulta {
+  id          String         @id @default(uuid())
+  medicoId    String
+  medico      Medico         @relation(fields: [medicoId], references: [id], onDelete: Cascade)
+  pacienteId  String
+  paciente    Paciente       @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  dataHora    DateTime
+  status      ConsultaStatus @default(AGENDADA)
+  observacoes String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("consultas")
+}
